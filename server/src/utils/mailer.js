@@ -2,33 +2,100 @@ const nodemailer = require("nodemailer");
 
 let transporter;
 
-const getTransporter = () => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+/**
+ * Creates a transporter from environment variables.
+ *
+ * Priority:
+ * 1) SMTP_URL or EMAIL_SMTP_URL — full connection string (e.g. smtps://user:pass@smtp.example.com:465)
+ * 2) SMTP_HOST + EMAIL_USER + EMAIL_PASS — any provider (set SMTP_PORT, SMTP_SECURE as needed)
+ * 3) EMAIL_USER + EMAIL_PASS only — assumes Gmail on smtp.gmail.com (port from SMTP_PORT or 465)
+ *
+ * Gmail: you must use an App Password (Google Account → Security → 2-Step Verification → App passwords),
+ * not your normal Google password. "Less secure apps" is no longer supported.
+ */
+const createTransportFromEnv = () => {
+  const smtpUrl = (process.env.SMTP_URL || process.env.EMAIL_SMTP_URL || "").trim();
+  if (smtpUrl) {
+    return nodemailer.createTransport(smtpUrl);
+  }
+
+  const user = (process.env.EMAIL_USER || "").trim();
+  const pass = (process.env.EMAIL_PASS || "").trim();
+  if (!user || !pass) {
     return null;
   }
+
+  const host = (process.env.SMTP_HOST || "").trim();
+  if (host) {
+    const port = Number(process.env.SMTP_PORT || 587);
+    const secure =
+      process.env.SMTP_SECURE === "true" || process.env.SMTP_SECURE === "1" || port === 465;
+    const opts = {
+      host,
+      port,
+      secure,
+      auth: { user, pass },
+    };
+    if (process.env.SMTP_TLS_REJECT_UNAUTHORIZED === "false") {
+      opts.tls = { rejectUnauthorized: false };
+    }
+    return nodemailer.createTransport(opts);
+  }
+
+  const port = Number(process.env.SMTP_PORT || 465);
+  const secure = port === 465;
+  return nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port,
+    secure,
+    auth: { user, pass },
+    requireTLS: !secure && port === 587,
+  });
+};
+
+const getTransporter = () => {
   if (!transporter) {
-    transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    transporter = createTransportFromEnv();
   }
   return transporter;
 };
 
-const sendMail = async ({ to, subject, html }) => {
-  const tx = getTransporter();
-  if (!tx) {
-    throw new Error("Email is not configured (set EMAIL_USER and EMAIL_PASS in .env)");
-  }
-  await tx.sendMail({
-    from: process.env.EMAIL_USER,
-    to,
-    subject,
-    html,
-  });
+const formatMailError = (err) => {
+  const parts = [err.message];
+  if (err.code) parts.push(`code=${err.code}`);
+  if (err.response) parts.push(String(err.response).slice(0, 500));
+  if (err.responseCode) parts.push(`smtp=${err.responseCode}`);
+  return parts.join(" | ");
 };
 
-module.exports = { sendMail };
+const sendMail = async ({ to, subject, html, text }) => {
+  const tx = getTransporter();
+  if (!tx) {
+    throw new Error("Email is not configured (set EMAIL_USER and EMAIL_PASS, or SMTP_URL / SMTP_HOST)");
+  }
+  const fromAddr = (process.env.EMAIL_FROM || process.env.EMAIL_USER || "").trim();
+  if (!fromAddr) {
+    throw new Error("Set EMAIL_FROM or EMAIL_USER so outgoing mail has a From address");
+  }
+  const name = (process.env.EMAIL_FROM_NAME || "").trim();
+  const fromHeader = name ? `"${name}" <${fromAddr}>` : fromAddr;
+  try {
+    await tx.sendMail({
+      from: fromHeader,
+      to,
+      subject,
+      html,
+      text: text || undefined,
+    });
+  } catch (err) {
+    err.mailDebugMessage = formatMailError(err);
+    throw err;
+  }
+};
+
+/** Clears cached transport (e.g. after env reload in tests). */
+const resetTransporter = () => {
+  transporter = null;
+};
+
+module.exports = { sendMail, getTransporter, resetTransporter, formatMailError };

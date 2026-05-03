@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 const { validationResult } = require("express-validator");
 const User = require("../models/User");
 const { signToken } = require("../utils/jwt");
-const { sendMail } = require("../utils/mailer");
+const { sendMail, formatMailError } = require("../utils/mailer");
 
 const validate = (req) => {
   const errors = validationResult(req);
@@ -40,7 +40,7 @@ const register = async (req, res, next) => {
         html: `<h2>Hi ${user.username}, your account is ready.</h2>`,
       });
     } catch (mailErr) {
-      console.error("Registration welcome email failed (account still created):", mailErr.message);
+      console.error("Registration welcome email failed (account still created):", formatMailError(mailErr));
     }
 
     res.status(201).json({ token, user: await User.findById(user._id).select("-passwordHash") });
@@ -90,12 +90,30 @@ const forgotPassword = async (req, res, next) => {
     user.passwordResetExpires = new Date(Date.now() + 1000 * 60 * 30);
     await user.save();
 
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
+    const clientBase = (process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
+    const resetUrl = `${clientBase}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
+    const subject = "Reset your SocialDash password";
+    const html = `
+      <p>Hi ${user.username || ""},</p>
+      <p>We received a request to reset your password. Use the link below (valid for 30 minutes):</p>
+      <p><a href="${resetUrl}">${resetUrl}</a></p>
+      <p>If you did not request this, you can ignore this email.</p>
+    `.trim();
+    const text = `Reset your password (link valid 30 minutes):\n\n${resetUrl}\n\nIf you did not request this, ignore this email.`;
     try {
-      await sendMail({ to: user.email, subject: "Reset your password", html: `<a href="${resetUrl}">Reset password</a>` });
+      await sendMail({ to: user.email, subject, html, text });
     } catch (mailErr) {
-      console.error("Password reset email failed:", mailErr.message);
-      return res.status(503).json({ message: "Could not send email. Check server email configuration." });
+      console.error("Password reset email failed:", formatMailError(mailErr));
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save().catch(() => {});
+      const devHint =
+        process.env.NODE_ENV !== "production"
+          ? " For Gmail, use an App Password (Google Account → Security → 2-Step Verification → App passwords), not your normal password. Check the server terminal for [mail] SMTP errors."
+          : "";
+      return res.status(503).json({
+        message: `Could not send the reset email.${devHint}`,
+      });
     }
 
     res.json({ message: "If the email exists, reset instructions were sent" });

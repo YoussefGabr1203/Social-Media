@@ -13,6 +13,7 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const conversationRoutes = require("./routes/conversationRoutes");
 const friendRoutes = require("./routes/friendRoutes");
 const errorHandler = require("./middleware/errorHandler");
+const { getTransporter, formatMailError } = require("./utils/mailer");
 
 const rootEnv = path.join(__dirname, "..", "..", ".env");
 const serverEnv = path.join(__dirname, "..", ".env");
@@ -62,4 +63,14 @@ app.use((err, req, res, next) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
+  const tx = getTransporter();
+  if (tx) {
+    tx.verify()
+      .then(() => console.log("[mail] SMTP connection verified"))
+      .catch((e) => console.warn("[mail] SMTP verify failed — password reset emails will fail until fixed:", formatMailError(e)));
+  } else {
+    console.warn("[mail] Not configured: set EMAIL_USER + EMAIL_PASS (Gmail: use an App Password) or SMTP_URL / SMTP_HOST");
+  }
+});
