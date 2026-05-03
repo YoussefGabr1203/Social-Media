@@ -109,7 +109,7 @@ const forgotPassword = async (req, res, next) => {
       await user.save().catch(() => {});
       const devHint =
         process.env.NODE_ENV !== "production"
-          ? " For Gmail, use an App Password (Google Account → Security → 2-Step Verification → App passwords), not your normal password. Check the server terminal for [mail] SMTP errors."
+          ? " Turning on 2FA is only step one. Open Google Account → Security → search \"App passwords\" → create one for Mail → copy the 16-character password into EMAIL_PASS in .env (not your normal Gmail password). Restart the server. See server log [mail] for the exact SMTP error."
           : "";
       return res.status(503).json({
         message: `Could not send the reset email.${devHint}`,

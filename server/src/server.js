@@ -71,6 +71,8 @@ app.listen(PORT, () => {
       .then(() => console.log("[mail] SMTP connection verified"))
       .catch((e) => console.warn("[mail] SMTP verify failed — password reset emails will fail until fixed:", formatMailError(e)));
   } else {
-    console.warn("[mail] Not configured: set EMAIL_USER + EMAIL_PASS (Gmail: use an App Password) or SMTP_URL / SMTP_HOST");
+    console.warn(
+      "[mail] Not configured: set EMAIL_USER + EMAIL_PASS. Gmail: after 2FA, create an App password (myaccount.google.com → Security → App passwords) and put that 16-char value in EMAIL_PASS."
+    );
   }
 });

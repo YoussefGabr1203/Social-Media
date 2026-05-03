@@ -10,9 +10,18 @@ let transporter;
  * 2) SMTP_HOST + EMAIL_USER + EMAIL_PASS — any provider (set SMTP_PORT, SMTP_SECURE as needed)
  * 3) EMAIL_USER + EMAIL_PASS only — assumes Gmail on smtp.gmail.com (port from SMTP_PORT or 465)
  *
- * Gmail: you must use an App Password (Google Account → Security → 2-Step Verification → App passwords),
- * not your normal Google password. "Less secure apps" is no longer supported.
+ * Gmail: 2FA must be ON, then you create a separate "App password" (16 characters).
+ * Put that value in EMAIL_PASS — not your normal Google sign-in password.
+ * Google often shows the app password with spaces; spaces are stripped automatically for Gmail SMTP.
  */
+const normalizePassForGmail = (pass, smtpHostOrHint) => {
+  const p = (pass || "").trim();
+  if (!p) return p;
+  const h = (smtpHostOrHint || "").toLowerCase();
+  if (h.includes("gmail")) return p.replace(/\s+/g, "");
+  return p;
+};
+
 const createTransportFromEnv = () => {
   const smtpUrl = (process.env.SMTP_URL || process.env.EMAIL_SMTP_URL || "").trim();
   if (smtpUrl) {
@@ -20,13 +29,14 @@ const createTransportFromEnv = () => {
   }
 
   const user = (process.env.EMAIL_USER || "").trim();
-  const pass = (process.env.EMAIL_PASS || "").trim();
-  if (!user || !pass) {
+  const passRaw = (process.env.EMAIL_PASS || "").trim();
+  if (!user || !passRaw) {
     return null;
   }
 
   const host = (process.env.SMTP_HOST || "").trim();
   if (host) {
+    const pass = normalizePassForGmail(passRaw, host);
     const port = Number(process.env.SMTP_PORT || 587);
     const secure =
       process.env.SMTP_SECURE === "true" || process.env.SMTP_SECURE === "1" || port === 465;
@@ -44,6 +54,7 @@ const createTransportFromEnv = () => {
 
   const port = Number(process.env.SMTP_PORT || 465);
   const secure = port === 465;
+  const pass = normalizePassForGmail(passRaw, "smtp.gmail.com");
   return nodemailer.createTransport({
     host: "smtp.gmail.com",
     port,
