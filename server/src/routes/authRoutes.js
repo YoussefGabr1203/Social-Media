@@ -1,8 +1,8 @@
 const express = require("express");
 const { body } = require("express-validator");
 const auth = require("../middleware/auth");
-const { register, login, logout, me, forgotPassword, resetPassword } = require("../controllers/authController");
-const { authLimiter } = require("../middleware/rateLimiter");
+const { register, login, logout, me, forgotPassword, resetPassword, testEmail } = require("../controllers/authController");
+const { authLimiter, passwordResetLimiter } = require("../middleware/rateLimiter");
 
 const router = express.Router();
 
@@ -27,13 +27,13 @@ router.post("/logout", logout);
 router.get("/me", auth, me);
 router.post(
   "/forgot-password",
-  authLimiter,
+  passwordResetLimiter,
   [body("email").trim().isEmail().normalizeEmail()],
   forgotPassword
 );
 router.post(
   "/reset-password",
-  authLimiter,
+  passwordResetLimiter,
   [
     body("token").trim().notEmpty(),
     body("email").trim().isEmail().normalizeEmail(),
@@ -41,5 +41,9 @@ router.post(
   ],
   resetPassword
 );
+
+if (process.env.NODE_ENV !== "production") {
+  router.get("/test-email", testEmail);
+}
 
 module.exports = router;

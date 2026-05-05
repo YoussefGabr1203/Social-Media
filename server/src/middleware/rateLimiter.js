@@ -8,4 +8,12 @@ const authLimiter = rateLimit({
   message: { message: "Too many auth requests, try again later" },
 });
 
-module.exports = { authLimiter };
+const passwordResetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many password reset requests, try again in an hour" },
+});
+
+module.exports = { authLimiter, passwordResetLimiter };

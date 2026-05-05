@@ -11,8 +11,8 @@ const userSchema = new mongoose.Schema(
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    passwordResetToken: String,
-    passwordResetExpires: Date,
+    passwordResetToken: { type: String, select: false },
+    passwordResetExpires: { type: Date, select: false },
   },
   { timestamps: true }
 );

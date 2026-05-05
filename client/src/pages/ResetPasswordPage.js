@@ -1,19 +1,24 @@
 import { useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../api/axios";
 import AuthShell from "../components/AuthShell";
 
 const ResetPasswordPage = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const tokenFromQuery = searchParams.get("token") || "";
   const emailFromQuery = searchParams.get("email") || "";
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [token, setToken] = useState(tokenFromQuery);
   const [email, setEmail] = useState(emailFromQuery);
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = useMemo(() => token.trim() && email.trim() && password.length >= 6, [token, email, password]);
+  const canSubmit = useMemo(
+    () => token.trim() && email.trim() && password.length >= 6 && password === confirm,
+    [token, email, password, confirm]
+  );
 
   const submit = async (e) => {
     e.preventDefault();
@@ -22,7 +27,7 @@ const ResetPasswordPage = () => {
     try {
       const { data } = await api.post("/auth/reset-password", { token, email, password });
       toast.success(data.message);
-      setPassword("");
+      navigate("/login");
     } catch (error) {
       toast.error(error?.response?.data?.message || "Reset failed");
     } finally {
@@ -52,6 +57,16 @@ const ResetPasswordPage = () => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </label>
+        <label className="auth-field">
+          <span className="auth-label">Confirm password</span>
+          <input
+            className="auth-input"
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
             required
           />
         </label>

@@ -80,10 +80,22 @@ const me = async (req, res, next) => {
 };
 
 const forgotPassword = async (req, res, next) => {
+  // Validate synchronously before responding so invalid input still gets a 400.
   try {
     validate(req);
+  } catch (e) {
+    return next(e);
+  }
+
+  // Respond immediately regardless of whether the email is registered.
+  // A constant-time response prevents timing-based user enumeration and ensures
+  // email-send failures never reveal whether the address exists in the system.
+  res.json({ message: "If the email exists, reset instructions were sent" });
+
+  // Process in the background — errors go to the server log only.
+  (async () => {
     const user = await User.findOne({ email: req.body.email });
-    if (!user) return res.json({ message: "If the email exists, reset instructions were sent" });
+    if (!user) return;
 
     const resetToken = crypto.randomBytes(32).toString("hex");
     user.passwordResetToken = crypto.createHash("sha256").update(resetToken).digest("hex");
@@ -92,6 +104,13 @@ const forgotPassword = async (req, res, next) => {
 
     const clientBase = (process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
     const resetUrl = `${clientBase}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
+
+    // In development, always print the link so the full reset flow is testable
+    // even when SMTP credentials are not configured.
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`\n[dev] Password reset link for ${user.email}:\n  ${resetUrl}\n`);
+    }
+
     const subject = "Reset your SocialDash password";
     const html = `
       <p>Hi ${user.username || ""},</p>
@@ -102,24 +121,14 @@ const forgotPassword = async (req, res, next) => {
     const text = `Reset your password (link valid 30 minutes):\n\n${resetUrl}\n\nIf you did not request this, ignore this email.`;
     try {
       await sendMail({ to: user.email, subject, html, text });
+      console.log(`[mail] Reset email sent to ${user.email}`);
     } catch (mailErr) {
-      console.error("Password reset email failed:", formatMailError(mailErr));
+      console.error(`[mail] Reset email FAILED for ${user.email}:`, formatMailError(mailErr));
       user.passwordResetToken = undefined;
       user.passwordResetExpires = undefined;
       await user.save().catch(() => {});
-      const devHint =
-        process.env.NODE_ENV !== "production"
-          ? " Turning on 2FA is only step one. Open Google Account → Security → search \"App passwords\" → create one for Mail → copy the 16-character password into EMAIL_PASS in .env (not your normal Gmail password). Restart the server. See server log [mail] for the exact SMTP error."
-          : "";
-      return res.status(503).json({
-        message: `Could not send the reset email.${devHint}`,
-      });
     }
-
-    res.json({ message: "If the email exists, reset instructions were sent" });
-  } catch (e) {
-    next(e);
-  }
+  })().catch((err) => console.error("forgotPassword background error:", err));
 };
 
 const resetPassword = async (req, res, next) => {
@@ -131,7 +140,7 @@ const resetPassword = async (req, res, next) => {
       email,
       passwordResetToken: hashed,
       passwordResetExpires: { $gt: new Date() },
-    }).select("+passwordHash");
+    }).select("+passwordHash +passwordResetToken +passwordResetExpires");
 
     if (!user) return res.status(400).json({ message: "Invalid or expired token" });
     user.passwordHash = await bcrypt.hash(password, 12);
@@ -145,4 +154,22 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, logout, me, forgotPassword, resetPassword };
+const testEmail = async (req, res) => {
+  const to = process.env.EMAIL_USER;
+  if (!to) {
+    return res.status(500).json({ ok: false, error: "EMAIL_USER is not set — nothing to test against" });
+  }
+  try {
+    await sendMail({
+      to,
+      subject: "SocialDash — SMTP connectivity test",
+      html: "<p>Your email configuration is working correctly.</p>",
+      text: "Your email configuration is working correctly.",
+    });
+    res.json({ ok: true, message: `Test email sent to ${to}` });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: formatMailError(err) });
+  }
+};
+
+module.exports = { register, login, logout, me, forgotPassword, resetPassword, testEmail };
