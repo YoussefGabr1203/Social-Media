@@ -125,13 +125,29 @@ const deleteComment = async (req, res, next) => {
 
 const searchPosts = async (req, res, next) => {
   try {
-    const q = req.query.q || "";
+    const raw = (req.query.q || "").trim();
+    if (!raw) return res.json([]);
+    // Escape regex metacharacters to prevent ReDoS attacks.
+    const q = raw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // Resolve authors whose username or display name matches so that
+    // searching "alice" returns alice's posts, not just posts mentioning alice.
+    const matchingAuthors = await User.find({
+      $or: [
+        { username: { $regex: q, $options: "i" } },
+        { fullName: { $regex: q, $options: "i" } },
+      ],
+    }).select("_id");
+    const authorIds = matchingAuthors.map((u) => u._id);
     const posts = await Post.find({
       $or: [
         { content: { $regex: q, $options: "i" } },
         { tags: { $elemMatch: { $regex: q, $options: "i" } } },
+        ...(authorIds.length > 0 ? [{ author: { $in: authorIds } }] : []),
       ],
-    }).populate("author", "username fullName profilePicture").sort({ createdAt: -1 }).limit(50);
+    })
+      .populate("author", "username fullName profilePicture")
+      .sort({ createdAt: -1 })
+      .limit(50);
     res.json(posts);
   } catch (e) { next(e); }
 };

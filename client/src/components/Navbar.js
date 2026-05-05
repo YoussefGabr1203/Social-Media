@@ -16,6 +16,7 @@ const DockBtn = ({ active, icon, label, onClick, badge }) => (
   >
     <span className="crystal-dock-btn-inner" aria-hidden />
     <span className="crystal-dock-icon">{icon}</span>
+    <span className="crystal-dock-label">{label}</span>
     {typeof badge === "number" && badge > 0 && (
       <span className="crystal-dock-badge">{badge > 99 ? "99+" : badge}</span>
     )}
@@ -106,6 +107,7 @@ const Navbar = () => {
               >
                 <span className="crystal-dock-btn-inner" aria-hidden />
                 <span className="crystal-dock-icon">⋯</span>
+                <span className="crystal-dock-label">More</span>
               </button>
               {menuOpen && (
                 <div className="crystal-dock-popover" role="menu">

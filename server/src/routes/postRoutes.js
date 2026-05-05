@@ -8,7 +8,7 @@ const router = express.Router();
 const postUpload = createUploader("posts");
 
 router.get("/", auth, getFeed);
-router.get("/search", [query("q").optional().trim().isLength({ max: 100 }).escape()], searchPosts);
+router.get("/search", [query("q").optional().trim().isLength({ max: 100 })], searchPosts);
 router.get("/user/:id", auth, getPostsByUser);
 router.post(
   "/",
