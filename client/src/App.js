@@ -2,6 +2,8 @@ import { useState, useCallback } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Navbar from "./components/Navbar";
+import LeftSidebar from "./components/LeftSidebar";
+import RightSidebar from "./components/RightSidebar";
 import ThemeToggle from "./components/ThemeToggle";
 import SplashScreen from "./components/SplashScreen";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -23,32 +25,47 @@ function AppShell() {
   const theme = useSelector((s) => s.ui.theme);
   const location = useLocation();
   const publicPaths = ["/login", "/register", "/forgot-password", "/reset-password"];
-  const showNav = !publicPaths.includes(location.pathname);
+  const isPublic = publicPaths.some((p) => location.pathname.startsWith(p));
 
-  return (
-    <div className={`app-shell ${theme}`}>
-      {showNav && <Navbar />}
-      {!showNav && (
+  if (isPublic) {
+    return (
+      <div className={`app-shell ${theme}`}>
         <div className="position-fixed top-0 end-0 p-2 auth-corner-toggle" style={{ zIndex: 1100 }}>
           <ThemeToggle />
         </div>
-      )}
-      <main className={showNav ? "container py-4 main-content" : "liquid-auth-main w-100"}>
-        <Routes>
-          <Route path="/login" element={<AuthPage />} />
-          <Route path="/register" element={<AuthPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-          <Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
-          <Route path="/profile/:username" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-          <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
-          <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
-          <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </main>
+        <main className="liquid-auth-main w-100">
+          <Routes>
+            <Route path="/login" element={<AuthPage />} />
+            <Route path="/register" element={<AuthPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+          </Routes>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`app-shell ${theme}`}>
+      {/* Bottom dock — only shown on mobile (hidden via CSS on desktop) */}
+      <Navbar />
+      {/* Three-column layout */}
+      <div className="fb-layout">
+        <LeftSidebar />
+        <main className="fb-center">
+          <Routes>
+            <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+            <Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
+            <Route path="/profile/:username" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
+            <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
+            <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </main>
+        <RightSidebar />
+      </div>
     </div>
   );
 }

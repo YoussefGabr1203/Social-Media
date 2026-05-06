@@ -12,6 +12,7 @@ const postRoutes = require("./routes/postRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const conversationRoutes = require("./routes/conversationRoutes");
 const friendRoutes = require("./routes/friendRoutes");
+const storyRoutes = require("./routes/storyRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const { getTransporter, formatMailError } = require("./utils/mailer");
 
@@ -47,6 +48,7 @@ app.use("/api/posts", postRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/friends", friendRoutes);
+app.use("/api/stories", storyRoutes);
 
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 

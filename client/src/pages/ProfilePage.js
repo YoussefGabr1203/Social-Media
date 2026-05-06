@@ -203,30 +203,21 @@ const ProfilePage = () => {
         )}
       </div>
       <section className="mt-4" aria-labelledby="profile-posts-heading">
-        <div className="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
-          <h2 id="profile-posts-heading" className="h5 mb-0">
-            Posts from @{profile.username}
-          </h2>
+        <div className="d-flex align-items-baseline justify-content-between gap-2 mb-3">
+          <h2 id="profile-posts-heading" className="h5 mb-0">Posts</h2>
           {!loadingPosts && (
             <span className="text-muted small">{posts.length} {posts.length === 1 ? "post" : "posts"}</span>
           )}
         </div>
-        <p className="text-muted small mb-3">
-          Everything this person has shared shows here (same as their uploads on the home feed, but only their posts).
-        </p>
         {loadingPosts && <Loader />}
         {!loadingPosts && posts.length === 0 && (
           <div className="card p-4 text-center text-muted">
-            <p className="mb-0">No posts yet — check back later or follow them so their new posts appear in your feed.</p>
+            <p className="mb-0">No posts yet.</p>
           </div>
         )}
-        <div className="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
-          {posts.map((p) => (
-            <div key={p._id} className="col">
-              <PostCard post={p} onThreadUpdated={() => profile._id && dispatch(fetchUserPosts(profile._id))} />
-            </div>
-          ))}
-        </div>
+        {posts.map((p) => (
+          <PostCard key={p._id} post={p} onThreadUpdated={() => profile._id && dispatch(fetchUserPosts(profile._id))} />
+        ))}
       </section>
     </div>
   );

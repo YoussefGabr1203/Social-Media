@@ -80,6 +80,42 @@ const searchUsers = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
+const getPeopleYouMayKnow = async (req, res, next) => {
+  try {
+    const me = await User.findById(req.user._id);
+    const myFriendIds = new Set((me.friends || []).map((id) => id.toString()));
+    myFriendIds.add(req.user._id.toString());
+
+    if (myFriendIds.size <= 1) return res.json([]);
+
+    const friendDocs = await User.find({ _id: { $in: me.friends } })
+      .populate("friends", "_id username fullName profilePicture");
+
+    const candidates = {};
+    for (const friend of friendDocs) {
+      for (const fof of friend.friends) {
+        const id = fof._id.toString();
+        if (myFriendIds.has(id)) continue;
+        if (!candidates[id]) candidates[id] = { user: fof, mutualCount: 0 };
+        candidates[id].mutualCount++;
+      }
+    }
+
+    const result = Object.values(candidates)
+      .sort((a, b) => b.mutualCount - a.mutualCount)
+      .slice(0, 8)
+      .map(({ user, mutualCount }) => ({
+        _id: user._id,
+        username: user.username,
+        fullName: user.fullName,
+        profilePicture: user.profilePicture,
+        mutualCount,
+      }));
+
+    res.json(result);
+  } catch (e) { next(e); }
+};
+
 const getMyConnections = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id)
@@ -95,4 +131,4 @@ const getMyConnections = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
-module.exports = { getPublicProfile, updateProfile, toggleFollow, searchUsers, getMyConnections };
+module.exports = { getPublicProfile, updateProfile, toggleFollow, searchUsers, getMyConnections, getPeopleYouMayKnow };

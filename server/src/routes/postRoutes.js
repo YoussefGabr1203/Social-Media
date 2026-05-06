@@ -14,7 +14,7 @@ router.post(
   "/",
   auth,
   postUpload.single("image"),
-  [body("content").trim().isLength({ min: 1, max: 2000 }).escape(), body("tags").optional().trim().isLength({ max: 200 })],
+  [body("content").trim().isLength({ min: 1, max: 2000 }), body("tags").optional().trim().isLength({ max: 200 })],
   createPost
 );
 router.put(
@@ -26,7 +26,7 @@ router.put(
 );
 router.delete("/:id", auth, deletePost);
 router.post("/:id/like", auth, toggleLike);
-router.post("/:id/comment", auth, [body("text").trim().isLength({ min: 1, max: 500 }).escape()], addComment);
+router.post("/:id/comment", auth, [body("text").trim().isLength({ min: 1, max: 500 })], addComment);
 router.delete("/:id/comment/:cid", auth, deleteComment);
 
 module.exports = router;

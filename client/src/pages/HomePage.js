@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchFeed, createPost } from "../store/postsSlice";
 import PostCard from "../components/PostCard";
+import StoriesBar from "../components/StoriesBar";
 import Loader from "../components/Loader";
 import toast from "react-hot-toast";
 import useMentionInput from "../hooks/useMentionInput";
@@ -36,6 +37,7 @@ const HomePage = () => {
 
   return (
     <div>
+      <StoriesBar />
       <p className="text-muted small mb-3">
         {friendFeed
           ? "Your feed shows posts from you and your friends. Add people from their profile, then accept requests under Friend requests in the menu."
