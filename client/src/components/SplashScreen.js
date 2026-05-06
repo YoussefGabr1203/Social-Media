@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import splashLogo from "../assets/splash-logo.png";
 
 const SplashScreen = ({ onComplete }) => {
   const [exiting, setExiting] = useState(false);
@@ -30,7 +31,9 @@ const SplashScreen = ({ onComplete }) => {
       </svg>
 
       <div className="splash-content">
-        <div className="splash-logo-ring" aria-hidden />
+        <div className="splash-logo-ring" aria-hidden>
+          <img src={splashLogo} alt="" className="splash-logo-img" />
+        </div>
         <h1 className="splash-title">SocialDash</h1>
         <p className="splash-tagline">Flow into your feed</p>
         <button type="button" className="splash-enter" onClick={() => setExiting(true)}>
