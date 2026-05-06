@@ -27,7 +27,40 @@
     radial-gradient(ellipse 50% 40% at 100% 20%, rgba(139, 92, 246, 0.06), transparent),
     linear-gradient(185deg, #020617 0%, #0f172a 45%, #020617 100%);
   min-height: 100vh;
-  color: #cbd5e1;
+  color: #ffffff;
+  /* Override Bootstrap 5 CSS variables so every BS component uses white text */
+  --bs-body-color: #ffffff;
+  --bs-body-color-rgb: 255, 255, 255;
+  --bs-secondary-color: rgba(255, 255, 255, 0.82);
+  --bs-secondary-color-rgb: 255, 255, 255;
+  --bs-link-color: #38bdf8;
+  --bs-link-color-rgb: 56, 189, 248;
+  --bs-link-hover-color: #7dd3fc;
+  --bs-heading-color: #ffffff;
+  --bs-card-color: #ffffff;
+  /* Brighten muted text so it reads as white, not grey */
+  --liquid-text-muted: rgba(255, 255, 255, 0.9);
+}
+
+/* Bootstrap outline buttons in dark mode */
+.app-shell.dark .btn-outline-secondary {
+  --bs-btn-color: rgba(255, 255, 255, 0.85);
+  --bs-btn-border-color: rgba(255, 255, 255, 0.28);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: rgba(255, 255, 255, 0.1);
+  --bs-btn-hover-border-color: rgba(255, 255, 255, 0.5);
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-active-bg: rgba(255, 255, 255, 0.15);
+}
+
+.app-shell.dark .btn-outline-dark {
+  --bs-btn-color: rgba(255, 255, 255, 0.85);
+  --bs-btn-border-color: rgba(255, 255, 255, 0.28);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: rgba(255, 255, 255, 0.1);
+  --bs-btn-hover-border-color: rgba(255, 255, 255, 0.5);
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-active-bg: rgba(255, 255, 255, 0.15);
 }
 
 .app-shell.light .card {
@@ -38,14 +71,15 @@
 
 .app-shell.dark .card {
   background: rgba(15, 23, 42, 0.92);
-  color: #e2e8f0;
+  color: #ffffff;
   border-color: rgba(51, 65, 85, 0.55);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
 }
 
 .app-shell.dark .form-control {
   background: rgba(15, 23, 42, 0.6);
-  color: #f1f5f9;
+  color: 
+  #ffffff;
   border-color: rgba(148, 163, 184, 0.2);
 }
 
