@@ -2,7 +2,7 @@
 
 A complete social platform built with React + Redux Toolkit frontend and Express + MongoDB backend.
 
-## Project Structure
+## Project Structur
 
 - `client/` React application
 - `server/` Express REST API
