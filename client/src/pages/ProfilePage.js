@@ -34,8 +34,13 @@ const ProfilePage = () => {
   }, [dispatch, slug]);
 
   useEffect(() => {
-    if (profile?._id) dispatch(fetchUserPosts(profile._id));
-  }, [dispatch, profile?._id]);
+    // Guard: only fetch posts once the loaded profile matches the slug we're viewing.
+    // Without this check, stale Redux profile data from a previous visit triggers
+    // fetchUserPosts for the wrong user before the new fetchProfile resolves.
+    if (profile?._id && profile.username?.toLowerCase() === slug.toLowerCase()) {
+      dispatch(fetchUserPosts(profile._id));
+    }
+  }, [dispatch, profile?._id, profile?.username, slug]);
 
   useEffect(() => {
     if (!profile || !currentUser) return;

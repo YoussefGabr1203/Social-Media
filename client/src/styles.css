@@ -1071,3 +1071,48 @@
   flex-direction: column;
   gap: 0.75rem;
 }
+
+/* ── Mention autocomplete dropdown ─────────────────────────────────── */
+.mention-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  list-style: none;
+  margin: 0.15rem 0 0;
+  padding: 0.25rem 0;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.app-shell.light .mention-dropdown {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(14, 165, 233, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.mention-item {
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.mention-item:hover {
+  background: rgba(14, 165, 233, 0.15);
+}
+
+.mention-link {
+  color: var(--liquid-teal);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.mention-link:hover {
+  text-decoration: underline;
+}

@@ -80,4 +80,19 @@ const searchUsers = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
-module.exports = { getPublicProfile, updateProfile, toggleFollow, searchUsers };
+const getMyConnections = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .populate("friends", "username fullName profilePicture")
+      .populate("following", "username fullName profilePicture")
+      .populate("followers", "username fullName profilePicture");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({
+      friends: user.friends || [],
+      following: user.following || [],
+      followers: user.followers || [],
+    });
+  } catch (e) { next(e); }
+};
+
+module.exports = { getPublicProfile, updateProfile, toggleFollow, searchUsers, getMyConnections };

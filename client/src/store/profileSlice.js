@@ -21,7 +21,13 @@ const slice = createSlice({
       .addCase(fetchProfile.fulfilled, (s, a) => { s.loading = false; s.viewedProfile = a.payload; })
       .addCase(fetchProfile.rejected, (s) => { s.loading = false; })
       .addCase(fetchUserPosts.pending, (s) => { s.userPostsLoading = true; })
-      .addCase(fetchUserPosts.fulfilled, (s, a) => { s.userPostsLoading = false; s.userPosts = a.payload; })
+      .addCase(fetchUserPosts.fulfilled, (s, a) => {
+        s.userPostsLoading = false;
+        // Discard results from a stale in-flight request for a different user.
+        if (!s.viewedProfile || s.viewedProfile._id === a.meta.arg) {
+          s.userPosts = a.payload;
+        }
+      })
       .addCase(fetchUserPosts.rejected, (s) => { s.userPostsLoading = false; })
       .addCase(updateMyProfile.fulfilled, (s, a) => { s.ownProfile = a.payload; s.viewedProfile = a.payload; });
   },

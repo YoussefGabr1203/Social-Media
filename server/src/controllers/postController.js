@@ -4,6 +4,16 @@ const User = require("../models/User");
 const Notification = require("../models/Notification");
 const { findUserByParam } = require("../utils/resolveUser");
 
+const extractMentions = async (text, senderId, postId) => {
+  const handles = [...new Set((text.match(/@(\w+)/g) || []).map((h) => h.slice(1)))];
+  if (!handles.length) return;
+  const users = await User.find({ username: { $in: handles } }).select("_id");
+  const notifs = users
+    .filter((u) => u._id.toString() !== senderId.toString())
+    .map((u) => ({ recipient: u._id, sender: senderId, type: "mention", post: postId }));
+  if (notifs.length) await Notification.insertMany(notifs);
+};
+
 const validate = (req) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -49,6 +59,7 @@ const createPost = async (req, res, next) => {
       image: req.file ? `/uploads/posts/${req.file.filename}` : "",
       tags,
     });
+    await extractMentions(req.body.content || "", req.user._id, post._id);
     res.status(201).json(await post.populate("author", "username fullName profilePicture"));
   } catch (e) { next(e); }
 };
@@ -106,6 +117,7 @@ const addComment = async (req, res, next) => {
     if (post.author.toString() !== req.user._id.toString()) {
       await Notification.create({ recipient: post.author, sender: req.user._id, type: "comment", post: post._id });
     }
+    await extractMentions(req.body.text || "", req.user._id, post._id);
     res.status(201).json(post.comments[post.comments.length - 1]);
   } catch (e) { next(e); }
 };

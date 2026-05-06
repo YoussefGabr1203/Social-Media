@@ -29,4 +29,19 @@ const markAllRead = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
-module.exports = { getNotifications, markOneRead, markAllRead };
+const deleteOne = async (req, res, next) => {
+  try {
+    const result = await Notification.findOneAndDelete({ _id: req.params.id, recipient: req.user._id });
+    if (!result) return res.status(404).json({ message: "Notification not found" });
+    res.json({ message: "Deleted" });
+  } catch (e) { next(e); }
+};
+
+const deleteAll = async (req, res, next) => {
+  try {
+    await Notification.deleteMany({ recipient: req.user._id });
+    res.json({ message: "All notifications deleted" });
+  } catch (e) { next(e); }
+};
+
+module.exports = { getNotifications, markOneRead, markAllRead, deleteOne, deleteAll };
