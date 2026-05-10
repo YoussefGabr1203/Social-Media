@@ -34,8 +34,12 @@ app.use(
     origin(origin, callback) {
       if (!origin) return callback(null, true);
       if (corsOrigins.has(origin)) return callback(null, true);
+      console.warn(`[CORS] blocked origin: ${origin}`);
       return callback(null, false);
     },
+    credentials: true,
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(morgan("dev"));
