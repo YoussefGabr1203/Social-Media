@@ -25,7 +25,7 @@ connectDb();
 
 const app = express();
 app.use(helmet());
-const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+const clientUrl = (process.env.CLIENT_URL || "http://localhost:3000").trim();
 const corsOrigins = new Set(
   [clientUrl, "http://localhost:3000", "http://127.0.0.1:3000"].filter(Boolean)
 );
@@ -33,8 +33,8 @@ app.use(
   cors({
     origin(origin, callback) {
       if (!origin) return callback(null, true);
-      if (corsOrigins.has(origin)) return callback(null, true);
-      console.warn(`[CORS] blocked origin: ${origin}`);
+      if (corsOrigins.has(origin.trim())) return callback(null, true);
+      console.warn(`[CORS] blocked origin: "${origin}" | CLIENT_URL: "${clientUrl}"`);
       return callback(null, false);
     },
     credentials: true,
