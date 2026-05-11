@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../store/authSlice";
 import ThemeToggle from "./ThemeToggle";
+import assetUrl from "../utils/assetUrl";
 
 const NAV_ITEMS = [
   { path: "/", label: "Home", icon: "⌂" },
@@ -18,7 +19,6 @@ const LeftSidebar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const assetBase = process.env.REACT_APP_ASSET_URL ?? "";
 
   return (
     <aside className="fb-left-sidebar">
@@ -31,7 +31,7 @@ const LeftSidebar = () => {
         {user && (
           <Link to={`/profile/${encodeURIComponent(user.username)}`} className="fb-profile-link">
             {user.profilePicture ? (
-              <img src={`${assetBase}${user.profilePicture}`} alt="" className="fb-profile-avatar" />
+              <img src={assetUrl(user.profilePicture)} alt="" className="fb-profile-avatar" />
             ) : (
               <div className="fb-profile-avatar fb-avatar-placeholder" aria-hidden />
             )}

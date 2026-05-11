@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProfile, fetchUserPosts } from "../store/profileSlice";
+import assetUrl from "../utils/assetUrl";
 import {
   fetchFriendStatus,
   sendFriendRequest,
@@ -142,7 +143,6 @@ const ProfilePage = () => {
   };
 
   if (!profile) return <Loader />;
-  const assetBase = process.env.REACT_APP_ASSET_URL ?? "";
   const fStatus = friendRow?.status;
   const friendsCount = profile.friendsCount ?? 0;
 
@@ -151,7 +151,7 @@ const ProfilePage = () => {
       <div className="card p-3 mb-3">
         <div className="d-flex gap-3 align-items-center flex-wrap">
           {profile.profilePicture ? (
-            <img src={`${assetBase}${profile.profilePicture}`} alt="" className="rounded-circle" width={72} height={72} />
+            <img src={assetUrl(profile.profilePicture)} alt="" className="rounded-circle" width={72} height={72} />
           ) : (
             <div className="bg-secondary rounded-circle" style={{ width: 72, height: 72 }} />
           )}

@@ -3,13 +3,13 @@ import { useSelector } from "react-redux";
 import api from "../api/axios";
 import StoryViewer from "./StoryViewer";
 import CreateStoryModal from "./CreateStoryModal";
+import assetUrl from "../utils/assetUrl";
 
 const StoriesBar = () => {
   const [stories, setStories] = useState([]);
   const [viewIdx, setViewIdx] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const user = useSelector((s) => s.auth.user);
-  const assetBase = process.env.REACT_APP_ASSET_URL ?? "";
 
   const load = () => {
     api.get("/stories").then(({ data }) => setStories(data)).catch(() => {});
@@ -30,7 +30,7 @@ const StoriesBar = () => {
           aria-label="Create story"
         >
           {user?.profilePicture ? (
-            <img src={`${assetBase}${user.profilePicture}`} alt="" className="fb-story-bg-img" />
+            <img src={assetUrl(user.profilePicture)} alt="" className="fb-story-bg-img" />
           ) : (
             <div className="fb-story-bg-gradient" aria-hidden />
           )}
@@ -50,12 +50,12 @@ const StoriesBar = () => {
             style={!story.image ? { background: story.background } : undefined}
           >
             {story.image ? (
-              <img src={`${assetBase}${story.image}`} alt="" className="fb-story-bg-img" />
+              <img src={assetUrl(story.image)} alt="" className="fb-story-bg-img" />
             ) : (
               story.text && <p className="fb-story-text-overlay">{story.text}</p>
             )}
             {story.creator?.profilePicture ? (
-              <img src={`${assetBase}${story.creator.profilePicture}`} alt="" className="fb-story-avatar" />
+              <img src={assetUrl(story.creator.profilePicture)} alt="" className="fb-story-avatar" />
             ) : (
               <div className="fb-story-avatar fb-avatar-placeholder" aria-hidden />
             )}
@@ -69,7 +69,6 @@ const StoriesBar = () => {
           stories={stories}
           initialIndex={viewIdx}
           onClose={() => setViewIdx(null)}
-          assetBase={assetBase}
         />
       )}
 

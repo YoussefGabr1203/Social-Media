@@ -3,19 +3,20 @@ import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import api from "../api/axios";
+import assetUrl from "../utils/assetUrl";
 import Loader from "../components/Loader";
 import { fetchIncoming, acceptFriendRequest, declineFriendRequest } from "../store/friendsSlice";
 import { refreshCurrentUser } from "../store/authSlice";
 import { fetchFeed } from "../store/postsSlice";
 
-const UserCard = ({ user, assetBase }) => {
+const UserCard = ({ user }) => {
   if (!user) return null;
   const path = `/profile/${encodeURIComponent(user.username)}`;
   return (
     <li className="border rounded p-3 mb-2 d-flex align-items-center gap-3">
       <Link to={path} className="d-flex align-items-center gap-3 text-decoration-none text-body flex-grow-1">
         {user.profilePicture ? (
-          <img src={`${assetBase}${user.profilePicture}`} alt="" className="rounded-circle" width={44} height={44} />
+          <img src={assetUrl(user.profilePicture)} alt="" className="rounded-circle" width={44} height={44} />
         ) : (
           <div className="bg-secondary rounded-circle flex-shrink-0" style={{ width: 44, height: 44 }} aria-hidden />
         )}
@@ -31,7 +32,6 @@ const UserCard = ({ user, assetBase }) => {
 const FriendsPage = () => {
   const dispatch = useDispatch();
   const { incoming, incomingLoading } = useSelector((s) => s.friends);
-  const assetBase = process.env.REACT_APP_ASSET_URL ?? "";
   const [tab, setTab] = useState("requests");
   const [connections, setConnections] = useState(null);
   const [connLoading, setConnLoading] = useState(false);
@@ -108,7 +108,7 @@ const FriendsPage = () => {
                 <li key={row._id} className="border rounded p-3 mb-3 d-flex flex-wrap align-items-center gap-3 justify-content-between">
                   <Link to={path} className="d-flex align-items-center gap-3 text-decoration-none text-body">
                     {u.profilePicture ? (
-                      <img src={`${assetBase}${u.profilePicture}`} alt="" className="rounded-circle" width={48} height={48} />
+                      <img src={assetUrl(u.profilePicture)} alt="" className="rounded-circle" width={48} height={48} />
                     ) : (
                       <div className="bg-secondary rounded-circle" style={{ width: 48, height: 48 }} aria-hidden />
                     )}
@@ -136,7 +136,7 @@ const FriendsPage = () => {
           )}
           <ul className="list-unstyled mb-0">
             {listForTab.map((u) => (
-              <UserCard key={u._id} user={u} assetBase={assetBase} />
+              <UserCard key={u._id} user={u} />
             ))}
           </ul>
         </>

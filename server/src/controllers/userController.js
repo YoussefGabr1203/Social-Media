@@ -31,7 +31,7 @@ const updateProfile = async (req, res, next) => {
       fullName: req.body.fullName,
       bio: req.body.bio,
     };
-    if (req.file) updates.profilePicture = `/uploads/avatars/${req.file.filename}`;
+    if (req.file) updates.profilePicture = req.file.path;
 
     const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true }).select("-passwordHash");
     res.json(user);

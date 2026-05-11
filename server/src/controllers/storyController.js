@@ -27,7 +27,7 @@ const createStory = async (req, res, next) => {
     }
     const story = await Story.create({
       creator: req.user._id,
-      image: req.file ? `/uploads/stories/${req.file.filename}` : "",
+      image: req.file ? req.file.path : "",
       text: text || "",
       background: background || "#1d4ed8",
     });

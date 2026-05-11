@@ -5,6 +5,7 @@ import api from "../api/axios";
 import toast from "react-hot-toast";
 import { optimisticLike, removePostFromFeed } from "../store/postsSlice";
 import CommentSection from "./CommentSection";
+import assetUrl from "../utils/assetUrl";
 
 const PostCard = ({ post, onThreadUpdated }) => {
   const [showComments, setShowComments] = useState(false);
@@ -48,7 +49,7 @@ const PostCard = ({ post, onThreadUpdated }) => {
         <p>{post.content}</p>
         {post.image && (
           <img
-            src={`${process.env.REACT_APP_ASSET_URL ?? ""}${post.image}`}
+            src={assetUrl(post.image)}
             alt="post"
             className="img-fluid rounded"
           />

@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
+import assetUrl from "../utils/assetUrl";
 
 const DURATION = 5000;
 
-const StoryViewer = ({ stories, initialIndex, onClose, assetBase }) => {
+const StoryViewer = ({ stories, initialIndex, onClose }) => {
   const [idx, setIdx] = useState(initialIndex);
   const story = stories[idx];
 
@@ -22,7 +23,6 @@ const StoryViewer = ({ stories, initialIndex, onClose, assetBase }) => {
   return (
     <div className="story-viewer-overlay" onClick={onClose}>
       <div className="story-viewer-card" onClick={(e) => e.stopPropagation()}>
-        {/* Progress bar */}
         <div className="story-progress-bar">
           {stories.map((_, i) => (
             <div
@@ -32,10 +32,9 @@ const StoryViewer = ({ stories, initialIndex, onClose, assetBase }) => {
           ))}
         </div>
 
-        {/* Header */}
         <div className="story-header">
           {story.creator?.profilePicture ? (
-            <img src={`${assetBase}${story.creator.profilePicture}`} alt="" className="story-creator-avatar" />
+            <img src={assetUrl(story.creator.profilePicture)} alt="" className="story-creator-avatar" />
           ) : (
             <div className="story-creator-avatar fb-avatar-placeholder" aria-hidden />
           )}
@@ -43,9 +42,8 @@ const StoryViewer = ({ stories, initialIndex, onClose, assetBase }) => {
           <button type="button" className="story-close-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
-        {/* Content */}
         {story.image ? (
-          <img src={`${assetBase}${story.image}`} alt="Story" className="story-content-img" />
+          <img src={assetUrl(story.image)} alt="Story" className="story-content-img" />
         ) : (
           <div className="story-content-text" style={{ background: story.background }}>
             <p>{story.text}</p>

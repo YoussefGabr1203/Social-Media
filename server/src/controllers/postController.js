@@ -56,7 +56,7 @@ const createPost = async (req, res, next) => {
     const post = await Post.create({
       author: req.user._id,
       content: req.body.content,
-      image: req.file ? `/uploads/posts/${req.file.filename}` : "",
+      image: req.file ? req.file.path : "",
       tags,
     });
     await extractMentions(req.body.content || "", req.user._id, post._id);
@@ -73,7 +73,7 @@ const updatePost = async (req, res, next) => {
 
     post.content = req.body.content ?? post.content;
     if (req.body.tags) post.tags = req.body.tags.split(",").map((t) => t.trim());
-    if (req.file) post.image = `/uploads/posts/${req.file.filename}`;
+    if (req.file) post.image = req.file.path;
     await post.save();
     res.json(post);
   } catch (e) { next(e); }

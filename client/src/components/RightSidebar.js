@@ -4,11 +4,11 @@ import { useDispatch } from "react-redux";
 import api from "../api/axios";
 import { sendFriendRequest } from "../store/friendsSlice";
 import toast from "react-hot-toast";
+import assetUrl from "../utils/assetUrl";
 
 const RightSidebar = () => {
   const [people, setPeople] = useState([]);
   const dispatch = useDispatch();
-  const assetBase = process.env.REACT_APP_ASSET_URL ?? "";
 
   useEffect(() => {
     api.get("/users/me/people-you-may-know")
@@ -37,7 +37,7 @@ const RightSidebar = () => {
             <div key={p._id} className="fb-pymk-item">
               <Link to={`/profile/${encodeURIComponent(p.username)}`} className="fb-pymk-link">
                 {p.profilePicture ? (
-                  <img src={`${assetBase}${p.profilePicture}`} alt="" className="fb-pymk-avatar" />
+                  <img src={assetUrl(p.profilePicture)} alt="" className="fb-pymk-avatar" />
                 ) : (
                   <div className="fb-pymk-avatar fb-avatar-placeholder" aria-hidden />
                 )}

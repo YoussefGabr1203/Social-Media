@@ -1,6 +1,12 @@
-const fs = require("fs");
-const path = require("path");
 const multer = require("multer");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const imageFilter = (req, file, cb) => {
   if (!file.mimetype.startsWith("image/")) {
@@ -9,21 +15,16 @@ const imageFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-const makeStorage = (subDir) => {
-  const dest = path.join(__dirname, "..", "..", "uploads", subDir);
-  // Ensure the upload directory exists before multer tries to write to it
-  fs.mkdirSync(dest, { recursive: true });
-  return multer.diskStorage({
-    destination: (req, file, cb) => cb(null, dest),
-    filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, "-")}`),
+const createUploader = (folder) => {
+  const storage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+      folder: `social-media/${folder}`,
+      allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
+      transformation: [{ quality: "auto", fetch_format: "auto" }],
+    },
   });
+  return multer({ storage, fileFilter: imageFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 };
-
-const createUploader = (subDir) =>
-  multer({
-    storage: makeStorage(subDir),
-    fileFilter: imageFilter,
-    limits: { fileSize: 5 * 1024 * 1024 },
-  });
 
 module.exports = { createUploader };
