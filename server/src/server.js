@@ -24,6 +24,7 @@ if (!process.env.MONGO_URI) dotenv.config({ path: serverEnv });
 connectDb();
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(helmet());
 const clientUrl = (process.env.CLIENT_URL || "http://localhost:3000").trim();
 const corsOrigins = new Set(

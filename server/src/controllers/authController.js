@@ -33,15 +33,13 @@ const register = async (req, res, next) => {
     }
     const token = signToken(user._id);
 
-    try {
-      await sendMail({
-        to: user.email,
-        subject: "Welcome to Social Media App",
-        html: `<h2>Hi ${user.username}, your account is ready.</h2>`,
-      });
-    } catch (mailErr) {
+    sendMail({
+      to: user.email,
+      subject: "Welcome to Social Media App",
+      html: `<h2>Hi ${user.username}, your account is ready.</h2>`,
+    }).catch((mailErr) => {
       console.error("Registration welcome email failed (account still created):", formatMailError(mailErr));
-    }
+    });
 
     res.status(201).json({ token, user: await User.findById(user._id).select("-passwordHash") });
   } catch (e) {
