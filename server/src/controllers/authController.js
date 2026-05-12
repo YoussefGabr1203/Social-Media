@@ -31,11 +31,11 @@ const register = async (req, res, next) => {
       }
       throw dbErr;
     }
-    const token = signToken(user._id);
+    const token = signToken(user._id, user.tokenVersion);
 
     sendMail({
       to: user.email,
-      subject: "Welcome to Social Media App",
+      subject: "Welcome to SocialDash",
       html: `<h2>Hi ${user.username}, your account is ready.</h2>`,
     }).catch((mailErr) => {
       console.error("Registration welcome email failed (account still created):", formatMailError(mailErr));
@@ -57,7 +57,7 @@ const login = async (req, res, next) => {
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return res.status(401).json({ message: "Invalid credentials" });
 
-    const token = signToken(user._id);
+    const token = signToken(user._id, user.tokenVersion);
     const safeUser = await User.findById(user._id).select("-passwordHash");
     res.json({ token, user: safeUser });
   } catch (e) {
@@ -65,7 +65,15 @@ const login = async (req, res, next) => {
   }
 };
 
-const logout = async (req, res) => res.json({ message: "Logged out" });
+// Requires auth middleware — increments tokenVersion to invalidate all existing tokens for this user.
+const logout = async (req, res, next) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, { $inc: { tokenVersion: 1 } });
+    res.json({ message: "Logged out" });
+  } catch (e) {
+    next(e);
+  }
+};
 
 const me = async (req, res, next) => {
   try {
@@ -78,19 +86,15 @@ const me = async (req, res, next) => {
 };
 
 const forgotPassword = async (req, res, next) => {
-  // Validate synchronously before responding so invalid input still gets a 400.
   try {
     validate(req);
   } catch (e) {
     return next(e);
   }
 
-  // Respond immediately regardless of whether the email is registered.
-  // A constant-time response prevents timing-based user enumeration and ensures
-  // email-send failures never reveal whether the address exists in the system.
+  // Always respond immediately — prevents email enumeration.
   res.json({ message: "If the email exists, reset instructions were sent" });
 
-  // Process in the background — errors go to the server log only.
   (async () => {
     const user = await User.findOne({ email: req.body.email });
     if (!user) return;
@@ -103,22 +107,23 @@ const forgotPassword = async (req, res, next) => {
     const clientBase = (process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
     const resetUrl = `${clientBase}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
 
-    // In development, always print the link so the full reset flow is testable
-    // even when SMTP credentials are not configured.
     if (process.env.NODE_ENV !== "production") {
       console.log(`\n[dev] Password reset link for ${user.email}:\n  ${resetUrl}\n`);
     }
 
-    const subject = "Reset your SocialDash password";
     const html = `
-      <p>Hi ${user.username || ""},</p>
-      <p>We received a request to reset your password. Use the link below (valid for 30 minutes):</p>
-      <p><a href="${resetUrl}">${resetUrl}</a></p>
-      <p>If you did not request this, you can ignore this email.</p>
+      <div style="font-family:sans-serif;max-width:480px;margin:auto">
+        <h2 style="color:#1d4ed8">Reset your SocialDash password</h2>
+        <p>Hi ${user.username || ""},</p>
+        <p>We received a request to reset your password. Click the button below — the link is valid for <strong>30 minutes</strong>.</p>
+        <a href="${resetUrl}" style="display:inline-block;margin:16px 0;padding:12px 24px;background:#1d4ed8;color:#fff;border-radius:6px;text-decoration:none;font-weight:600">Reset Password</a>
+        <p style="color:#6b7280;font-size:13px">If you did not request this, you can safely ignore this email. Your password will not change.</p>
+      </div>
     `.trim();
-    const text = `Reset your password (link valid 30 minutes):\n\n${resetUrl}\n\nIf you did not request this, ignore this email.`;
+    const text = `Reset your SocialDash password (link valid 30 minutes):\n\n${resetUrl}\n\nIf you did not request this, ignore this email.`;
+
     try {
-      await sendMail({ to: user.email, subject, html, text });
+      await sendMail({ to: user.email, subject: "Reset your SocialDash password", html, text });
       console.log(`[mail] Reset email sent to ${user.email}`);
     } catch (mailErr) {
       console.error(`[mail] Reset email FAILED for ${user.email}:`, formatMailError(mailErr));
@@ -141,12 +146,15 @@ const resetPassword = async (req, res, next) => {
     }).select("+passwordHash +passwordResetToken +passwordResetExpires");
 
     if (!user) return res.status(400).json({ message: "Invalid or expired token" });
+
     user.passwordHash = await bcrypt.hash(password, 12);
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
+    // Invalidate all existing sessions after password reset
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
 
-    res.json({ message: "Password reset successful" });
+    res.json({ message: "Password reset successful. Please log in with your new password." });
   } catch (e) {
     next(e);
   }

@@ -23,7 +23,7 @@ router.post(
   [body("email").trim().isEmail().normalizeEmail(), body("password").isLength({ min: 6 })],
   login
 );
-router.post("/logout", logout);
+router.post("/logout", auth, logout);
 router.get("/me", auth, me);
 router.post(
   "/forgot-password",

@@ -10,6 +10,12 @@ const authGuard = async (req, res, next) => {
     const user = await User.findById(payload.sub).select("-passwordHash");
     if (!user) return res.status(401).json({ message: "Invalid token" });
 
+    // Validate token version — allows server-side logout invalidation.
+    // Old tokens without `tv` claim are still accepted for backward compatibility.
+    if (payload.tv !== undefined && payload.tv !== user.tokenVersion) {
+      return res.status(401).json({ message: "Session expired, please log in again" });
+    }
+
     req.user = user;
     next();
   } catch (err) {

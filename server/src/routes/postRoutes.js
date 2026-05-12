@@ -2,7 +2,10 @@ const express = require("express");
 const { body, query } = require("express-validator");
 const auth = require("../middleware/auth");
 const { createUploader } = require("../utils/upload");
-const { getFeed, getPostsByUser, createPost, updatePost, deletePost, toggleLike, addComment, deleteComment, searchPosts } = require("../controllers/postController");
+const {
+  getFeed, getPostsByUser, createPost, sharePost,
+  updatePost, deletePost, toggleLike, addComment, deleteComment, searchPosts,
+} = require("../controllers/postController");
 
 const router = express.Router();
 const postUpload = createUploader("posts");
@@ -16,6 +19,12 @@ router.post(
   postUpload.single("image"),
   [body("content").trim().isLength({ min: 1, max: 2000 }), body("tags").optional().trim().isLength({ max: 200 })],
   createPost
+);
+router.post(
+  "/:id/share",
+  auth,
+  [body("content").optional().trim().isLength({ max: 500 })],
+  sharePost
 );
 router.put(
   "/:id",

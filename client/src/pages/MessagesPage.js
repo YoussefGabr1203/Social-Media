@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { appendMessage, fetchConversations, fetchMessages, setActiveConversation } from "../store/messagesSlice";
 import api from "../api/axios";
 import toast from "react-hot-toast";
 import Loader from "../components/Loader";
+import assetUrl from "../utils/assetUrl";
 
 const isLikelyObjectId = (s) => /^[a-fA-F0-9]{24}$/.test(s.trim());
 
@@ -59,6 +61,9 @@ const MessagesPage = () => {
     setMessagePage(nextPage);
   };
 
+  const getOtherParticipants = (conv) =>
+    conv.participants.filter((p) => p._id !== user?._id);
+
   return (
     <div className="row g-3">
       <div className="col-md-4">
@@ -76,21 +81,90 @@ const MessagesPage = () => {
               Chat
             </button>
           </div>
-          <p className="small text-muted mb-2">You can still paste a 24-character user id if you have one.</p>
-          {conversations.map((c) => (
-            <button key={c._id} type="button" className="btn btn-light text-start mb-1 w-100" onClick={() => open(c._id)}>
-              {c.participants.filter((p) => p._id !== user?._id).map((p) => `@${p.username}`).join(", ")}
-            </button>
-          ))}
+
+          {conversations.map((c) => {
+            const others = getOtherParticipants(c);
+            const isActive = c._id === activeConversationId;
+            return (
+              <button
+                key={c._id}
+                type="button"
+                className={`btn text-start mb-1 w-100 d-flex align-items-center gap-2 ${isActive ? "btn-primary" : "btn-light"}`}
+                onClick={() => open(c._id)}
+              >
+                {others[0]?.profilePicture ? (
+                  <img
+                    src={assetUrl(others[0].profilePicture)}
+                    alt={others[0].username}
+                    className="rounded-circle flex-shrink-0"
+                    width={32}
+                    height={32}
+                    style={{ objectFit: "cover" }}
+                  />
+                ) : (
+                  <div
+                    className="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white flex-shrink-0"
+                    style={{ width: 32, height: 32, fontSize: 12 }}
+                  >
+                    {others[0]?.username?.[0]?.toUpperCase() || "?"}
+                  </div>
+                )}
+                <span className="text-truncate">
+                  {others.map((p) => `@${p.username}`).join(", ")}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
+
       <div className="col-md-8">
         <div className="card p-3">
           {!activeConversationId && <Loader />}
-          <div className="message-list">{activeMessages.map((m) => <div key={m._id} className="mb-2"><strong>{m.sender?.username}:</strong> {m.text}</div>)}</div>
-          <button type="button" className="btn btn-sm btn-outline-secondary mb-2" onClick={loadMore} disabled={!activeConversationId}>Load older</button>
+          <div className="message-list mb-2">
+            {activeMessages.map((m) => {
+              const isMine = m.sender?._id === user?._id || m.sender === user?._id;
+              return (
+                <div key={m._id} className={`mb-2 d-flex align-items-start gap-2 ${isMine ? "flex-row-reverse" : ""}`}>
+                  {m.sender?.username && (
+                    <Link to={`/profile/${encodeURIComponent(m.sender.username)}`} className="flex-shrink-0">
+                      {m.sender?.profilePicture ? (
+                        <img
+                          src={assetUrl(m.sender.profilePicture)}
+                          alt={m.sender.username}
+                          className="rounded-circle"
+                          width={28}
+                          height={28}
+                          style={{ objectFit: "cover" }}
+                        />
+                      ) : (
+                        <div
+                          className="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white"
+                          style={{ width: 28, height: 28, fontSize: 11 }}
+                        >
+                          {m.sender.username[0]?.toUpperCase()}
+                        </div>
+                      )}
+                    </Link>
+                  )}
+                  <div className={`rounded p-2 small ${isMine ? "bg-primary text-white" : "bg-light"}`} style={{ maxWidth: "70%" }}>
+                    {m.text}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <button type="button" className="btn btn-sm btn-outline-secondary mb-2" onClick={loadMore} disabled={!activeConversationId}>
+            Load older
+          </button>
           <div className="input-group mt-2">
-            <input className="form-control" value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a message…" />
+            <input
+              className="form-control"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Type a message…"
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), send())}
+            />
             <button type="button" className="btn btn-primary" onClick={send}>Send</button>
           </div>
         </div>

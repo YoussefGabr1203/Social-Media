@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     passwordResetToken: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
+    tokenVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

@@ -25,7 +25,21 @@ connectDb();
 
 const app = express();
 app.set("trust proxy", 1);
-app.use(helmet());
+
+// Security headers
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "blob:"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      connectSrc: ["'self'", "https://*.railway.app", "https://*.vercel.app"],
+    },
+  },
+}));
+
 const clientUrl = (process.env.CLIENT_URL || "http://localhost:3000").trim();
 const corsOrigins = new Set(
   [clientUrl, "http://localhost:3000", "http://127.0.0.1:3000"].filter(Boolean)
@@ -43,8 +57,11 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 app.use(morgan("dev"));
-app.use(express.json());
+// Limit JSON body to 50 KB — multipart uploads are handled by multer separately
+app.use(express.json({ limit: "50kb" }));
+app.use(express.urlencoded({ extended: true, limit: "50kb" }));
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 app.use("/api/auth", authRoutes);

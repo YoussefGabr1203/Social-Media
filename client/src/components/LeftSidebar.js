@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../store/authSlice";
 import ThemeToggle from "./ThemeToggle";
+import api from "../api/axios";
 import assetUrl from "../utils/assetUrl";
 
 const NAV_ITEMS = [
@@ -19,6 +20,13 @@ const LeftSidebar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleLogout = async () => {
+    // Invalidate server-side session (increments tokenVersion)
+    try { await api.post("/auth/logout"); } catch { /* ignore — still clear local state */ }
+    dispatch(logout());
+    navigate("/login");
+  };
 
   return (
     <aside className="fb-left-sidebar">
@@ -69,7 +77,7 @@ const LeftSidebar = () => {
           <button
             type="button"
             className="fb-nav-item fb-logout-btn"
-            onClick={() => { dispatch(logout()); navigate("/login"); }}
+            onClick={handleLogout}
           >
             <span className="fb-nav-icon" aria-hidden>↩</span>
             <span className="fb-nav-label">Log out</span>

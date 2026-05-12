@@ -9,11 +9,13 @@ const commentSchema = new mongoose.Schema({
 const postSchema = new mongoose.Schema(
   {
     author: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    content: { type: String, required: true, trim: true, maxlength: 2000 },
+    content: { type: String, trim: true, maxlength: 2000, default: "" },
     image: { type: String, default: "" },
     tags: [{ type: String, trim: true }],
     likes: [{ user: { type: mongoose.Schema.Types.ObjectId, ref: "User" } }],
     comments: [commentSchema],
+    sharedFrom: { type: mongoose.Schema.Types.ObjectId, ref: "Post", default: null },
+    shareCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

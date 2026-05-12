@@ -4,6 +4,13 @@ const User = require("../models/User");
 const Notification = require("../models/Notification");
 const { findUserByParam } = require("../utils/resolveUser");
 
+const AUTHOR_FIELDS = "username fullName profilePicture";
+
+const sharedFromPopulate = {
+  path: "sharedFrom",
+  populate: { path: "author", select: AUTHOR_FIELDS },
+};
+
 const extractMentions = async (text, senderId, postId) => {
   const handles = [...new Set((text.match(/@(\w+)/g) || []).map((h) => h.slice(1)))];
   if (!handles.length) return;
@@ -31,8 +38,9 @@ const getFeed = async (req, res, next) => {
     const friends = me.friends && me.friends.length > 0 ? me.friends : [];
     const authors = friends.length > 0 ? [...friends, me._id] : [...me.following, me._id];
     const posts = await Post.find({ author: { $in: authors } })
-      .populate("author", "username fullName profilePicture")
+      .populate("author", AUTHOR_FIELDS)
       .populate("comments.user", "username profilePicture")
+      .populate(sharedFromPopulate)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
@@ -44,7 +52,10 @@ const getPostsByUser = async (req, res, next) => {
   try {
     const author = await findUserByParam(req.params.id);
     if (!author) return res.status(404).json({ message: "User not found" });
-    const posts = await Post.find({ author: author._id }).populate("author", "username fullName profilePicture").sort({ createdAt: -1 });
+    const posts = await Post.find({ author: author._id })
+      .populate("author", AUTHOR_FIELDS)
+      .populate(sharedFromPopulate)
+      .sort({ createdAt: -1 });
     res.json(posts);
   } catch (e) { next(e); }
 };
@@ -60,7 +71,50 @@ const createPost = async (req, res, next) => {
       tags,
     });
     await extractMentions(req.body.content || "", req.user._id, post._id);
-    res.status(201).json(await post.populate("author", "username fullName profilePicture"));
+    res.status(201).json(await post.populate("author", AUTHOR_FIELDS));
+  } catch (e) { next(e); }
+};
+
+const sharePost = async (req, res, next) => {
+  try {
+    const original = await Post.findById(req.params.id)
+      .populate("author", AUTHOR_FIELDS)
+      .populate(sharedFromPopulate);
+    if (!original) return res.status(404).json({ message: "Post not found" });
+
+    // Always point to the root post — prevent nested share chains
+    const rootId = original.sharedFrom ? original.sharedFrom._id : original._id;
+
+    const quoteContent = (req.body.content || "").trim().slice(0, 500);
+
+    const shared = await Post.create({
+      author: req.user._id,
+      content: quoteContent,
+      sharedFrom: rootId,
+    });
+
+    // Increment share count on the root post
+    await Post.findByIdAndUpdate(rootId, { $inc: { shareCount: 1 } });
+
+    // Notify original author if it's not the sharer themselves
+    const rootAuthorId = original.sharedFrom
+      ? original.sharedFrom.author?._id || original.sharedFrom.author
+      : original.author?._id || original.author;
+
+    if (rootAuthorId && rootAuthorId.toString() !== req.user._id.toString()) {
+      await Notification.create({
+        recipient: rootAuthorId,
+        sender: req.user._id,
+        type: "share",
+        post: rootId,
+      });
+    }
+
+    const populated = await Post.findById(shared._id)
+      .populate("author", AUTHOR_FIELDS)
+      .populate(sharedFromPopulate);
+
+    res.status(201).json(populated);
   } catch (e) { next(e); }
 };
 
@@ -139,10 +193,7 @@ const searchPosts = async (req, res, next) => {
   try {
     const raw = (req.query.q || "").trim();
     if (!raw) return res.json([]);
-    // Escape regex metacharacters to prevent ReDoS attacks.
     const q = raw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    // Resolve authors whose username or display name matches so that
-    // searching "alice" returns alice's posts, not just posts mentioning alice.
     const matchingAuthors = await User.find({
       $or: [
         { username: { $regex: q, $options: "i" } },
@@ -157,11 +208,12 @@ const searchPosts = async (req, res, next) => {
         ...(authorIds.length > 0 ? [{ author: { $in: authorIds } }] : []),
       ],
     })
-      .populate("author", "username fullName profilePicture")
+      .populate("author", AUTHOR_FIELDS)
+      .populate(sharedFromPopulate)
       .sort({ createdAt: -1 })
       .limit(50);
     res.json(posts);
   } catch (e) { next(e); }
 };
 
-module.exports = { getFeed, getPostsByUser, createPost, updatePost, deletePost, toggleLike, addComment, deleteComment, searchPosts };
+module.exports = { getFeed, getPostsByUser, createPost, sharePost, updatePost, deletePost, toggleLike, addComment, deleteComment, searchPosts };
