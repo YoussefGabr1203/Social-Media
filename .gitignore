@@ -1,5 +1,6 @@
 node_modules/
 .env
+.claude/
 client/build/
 server/uploads/avatars/*
 server/uploads/posts/*
