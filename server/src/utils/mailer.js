@@ -1,22 +1,50 @@
 const nodemailer = require("nodemailer");
 
 // ---------------------------------------------------------------------------
-// Resend (HTTP API — works on Railway which blocks outbound SMTP)
+// Brevo (formerly Sendinblue) — HTTP API, no domain required, verify sender email only
 // ---------------------------------------------------------------------------
-const sendViaResend = async ({ to, subject, html, text }) => {
-  const { Resend } = require("resend");
-  const resend = new Resend(process.env.RESEND_API_KEY);
+const sendViaBrevo = async ({ to, subject, html, text }) => {
+  const https = require("https");
+  const fromAddr = (process.env.EMAIL_FROM || "").trim();
+  const fromName = (process.env.EMAIL_FROM_NAME || "SocialDash").trim();
 
-  const fromAddr = (process.env.EMAIL_FROM || "onboarding@resend.dev").trim();
-  const name = (process.env.EMAIL_FROM_NAME || "SocialDash").trim();
-  const from = `${name} <${fromAddr}>`;
+  const body = JSON.stringify({
+    sender: { name: fromName, email: fromAddr },
+    to: [{ email: to }],
+    subject,
+    htmlContent: html,
+    textContent: text || undefined,
+  });
 
-  const { error } = await resend.emails.send({ from, to, subject, html, text: text || undefined });
-  if (error) {
-    const err = new Error(error.message || "Resend API error");
-    err.resendError = error;
-    throw err;
-  }
+  await new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: "api.brevo.com",
+        path: "/v3/smtp/email",
+        method: "POST",
+        headers: {
+          "api-key": process.env.BREVO_API_KEY,
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (chunk) => (data += chunk));
+        res.on("end", () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve();
+          } else {
+            const err = new Error(`Brevo API error ${res.statusCode}: ${data}`);
+            reject(err);
+          }
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
 };
 
 // ---------------------------------------------------------------------------
@@ -65,10 +93,10 @@ const getSmtpTransporter = () => {
 
 const sendViaSmtp = async ({ to, subject, html, text }) => {
   const tx = getSmtpTransporter();
-  if (!tx) throw new Error("Email not configured — set RESEND_API_KEY (recommended) or EMAIL_USER + EMAIL_PASS");
+  if (!tx) throw new Error("Email not configured — set BREVO_API_KEY in Railway variables");
 
   const fromAddr = (process.env.EMAIL_FROM || process.env.EMAIL_USER || "").trim();
-  if (!fromAddr) throw new Error("Set EMAIL_FROM or EMAIL_USER so outgoing mail has a From address");
+  if (!fromAddr) throw new Error("Set EMAIL_FROM so outgoing mail has a From address");
 
   const name = (process.env.EMAIL_FROM_NAME || "").trim();
   const from = name ? `"${name}" <${fromAddr}>` : fromAddr;
@@ -85,11 +113,11 @@ const sendViaSmtp = async ({ to, subject, html, text }) => {
 };
 
 // ---------------------------------------------------------------------------
-// Public API — auto-selects Resend when RESEND_API_KEY is present
+// Public API — Brevo when key present, otherwise SMTP (local dev)
 // ---------------------------------------------------------------------------
 const sendMail = async (opts) => {
-  if (process.env.RESEND_API_KEY) {
-    return sendViaResend(opts);
+  if (process.env.BREVO_API_KEY) {
+    return sendViaBrevo(opts);
   }
   return sendViaSmtp(opts);
 };
