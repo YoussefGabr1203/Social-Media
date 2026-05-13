@@ -14,6 +14,8 @@ const sendViaBrevo = async ({ to, subject, html, text }) => {
     subject,
     htmlContent: html,
     textContent: text || undefined,
+    trackClicks: false,
+    trackOpens: false,
   });
 
   await new Promise((resolve, reject) => {
