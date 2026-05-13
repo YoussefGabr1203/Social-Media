@@ -13,8 +13,8 @@ const sendViaSendGrid = async ({ to, subject, html, text }) => {
     from: { email: fromAddr, name: fromName },
     subject,
     content: [
+      { type: "text/plain", value: text || " " },
       { type: "text/html", value: html },
-      ...(text ? [{ type: "text/plain", value: text }] : []),
     ],
     tracking_settings: {
       click_tracking: { enable: false },
