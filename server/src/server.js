@@ -14,7 +14,7 @@ const conversationRoutes = require("./routes/conversationRoutes");
 const friendRoutes = require("./routes/friendRoutes");
 const storyRoutes = require("./routes/storyRoutes");
 const errorHandler = require("./middleware/errorHandler");
-const { getTransporter, formatMailError } = require("./utils/mailer");
+// mailer loaded lazily — no startup import needed
 
 const rootEnv = path.join(__dirname, "..", "..", ".env");
 const serverEnv = path.join(__dirname, "..", ".env");
@@ -89,14 +89,11 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
-  const tx = getTransporter();
-  if (tx) {
-    tx.verify()
-      .then(() => console.log("[mail] SMTP connection verified"))
-      .catch((e) => console.warn("[mail] SMTP verify failed — password reset emails will fail until fixed:", formatMailError(e)));
+  if (process.env.RESEND_API_KEY) {
+    console.log("[mail] Resend API key detected — using Resend for email delivery");
+  } else if (process.env.EMAIL_USER) {
+    console.log("[mail] RESEND_API_KEY not set — falling back to SMTP (may fail on Railway)");
   } else {
-    console.warn(
-      "[mail] Not configured: set EMAIL_USER + EMAIL_PASS. Gmail: after 2FA, create an App password (myaccount.google.com → Security → App passwords) and put that 16-char value in EMAIL_PASS."
-    );
+    console.warn("[mail] No email provider configured — set RESEND_API_KEY in Railway variables");
   }
 });

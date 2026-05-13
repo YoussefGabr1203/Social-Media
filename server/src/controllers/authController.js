@@ -3,7 +3,8 @@ const bcrypt = require("bcrypt");
 const { validationResult } = require("express-validator");
 const User = require("../models/User");
 const { signToken } = require("../utils/jwt");
-const { sendMail, formatMailError } = require("../utils/mailer");
+const { sendMail } = require("../utils/mailer");
+const formatMailError = (err) => err?.resendError ? JSON.stringify(err.resendError) : (err?.mailDebugMessage || err?.message || String(err));
 
 const validate = (req) => {
   const errors = validationResult(req);
