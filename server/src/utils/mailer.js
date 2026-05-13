@@ -1,31 +1,35 @@
 const nodemailer = require("nodemailer");
 
 // ---------------------------------------------------------------------------
-// Brevo (formerly Sendinblue) — HTTP API, no domain required, verify sender email only
+// SendGrid — HTTP API, single sender verification (no domain needed), no link tracking
 // ---------------------------------------------------------------------------
-const sendViaBrevo = async ({ to, subject, html, text }) => {
+const sendViaSendGrid = async ({ to, subject, html, text }) => {
   const https = require("https");
   const fromAddr = (process.env.EMAIL_FROM || "").trim();
   const fromName = (process.env.EMAIL_FROM_NAME || "SocialDash").trim();
 
   const body = JSON.stringify({
-    sender: { name: fromName, email: fromAddr },
-    to: [{ email: to }],
+    personalizations: [{ to: [{ email: to }] }],
+    from: { email: fromAddr, name: fromName },
     subject,
-    htmlContent: html,
-    textContent: text || undefined,
-    trackClicks: false,
-    trackOpens: false,
+    content: [
+      { type: "text/html", value: html },
+      ...(text ? [{ type: "text/plain", value: text }] : []),
+    ],
+    tracking_settings: {
+      click_tracking: { enable: false },
+      open_tracking: { enable: false },
+    },
   });
 
   await new Promise((resolve, reject) => {
     const req = https.request(
       {
-        hostname: "api.brevo.com",
-        path: "/v3/smtp/email",
+        hostname: "api.sendgrid.com",
+        path: "/v3/mail/send",
         method: "POST",
         headers: {
-          "api-key": process.env.BREVO_API_KEY,
+          Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
           "Content-Type": "application/json",
           "Content-Length": Buffer.byteLength(body),
         },
@@ -37,8 +41,7 @@ const sendViaBrevo = async ({ to, subject, html, text }) => {
           if (res.statusCode >= 200 && res.statusCode < 300) {
             resolve();
           } else {
-            const err = new Error(`Brevo API error ${res.statusCode}: ${data}`);
-            reject(err);
+            reject(new Error(`SendGrid error ${res.statusCode}: ${data}`));
           }
         });
       }
@@ -95,7 +98,7 @@ const getSmtpTransporter = () => {
 
 const sendViaSmtp = async ({ to, subject, html, text }) => {
   const tx = getSmtpTransporter();
-  if (!tx) throw new Error("Email not configured — set BREVO_API_KEY in Railway variables");
+  if (!tx) throw new Error("Email not configured — set SENDGRID_API_KEY in Railway variables");
 
   const fromAddr = (process.env.EMAIL_FROM || process.env.EMAIL_USER || "").trim();
   if (!fromAddr) throw new Error("Set EMAIL_FROM so outgoing mail has a From address");
@@ -115,12 +118,10 @@ const sendViaSmtp = async ({ to, subject, html, text }) => {
 };
 
 // ---------------------------------------------------------------------------
-// Public API — Brevo when key present, otherwise SMTP (local dev)
+// Public API — SendGrid when key present, otherwise SMTP (local dev)
 // ---------------------------------------------------------------------------
 const sendMail = async (opts) => {
-  if (process.env.BREVO_API_KEY) {
-    return sendViaBrevo(opts);
-  }
+  if (process.env.SENDGRID_API_KEY) return sendViaSendGrid(opts);
   return sendViaSmtp(opts);
 };
 

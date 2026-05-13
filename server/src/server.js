@@ -89,11 +89,11 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
-  if (process.env.BREVO_API_KEY) {
-    console.log("[mail] Brevo API key detected — using Brevo for email delivery");
+  if (process.env.SENDGRID_API_KEY) {
+    console.log("[mail] SendGrid API key detected — using SendGrid for email delivery");
   } else if (process.env.EMAIL_USER) {
-    console.log("[mail] BREVO_API_KEY not set — falling back to SMTP (may fail on Railway)");
+    console.log("[mail] SENDGRID_API_KEY not set — falling back to SMTP (may fail on Railway)");
   } else {
-    console.warn("[mail] No email provider configured — set BREVO_API_KEY in Railway variables");
+    console.warn("[mail] No email provider configured — set SENDGRID_API_KEY in Railway variables");
   }
 });

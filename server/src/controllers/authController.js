@@ -116,9 +116,8 @@ const forgotPassword = async (req, res, next) => {
       <div style="font-family:sans-serif;max-width:480px;margin:auto">
         <h2 style="color:#1d4ed8">Reset your SocialDash password</h2>
         <p>Hi ${user.username || ""},</p>
-        <p>We received a request to reset your password. The link is valid for <strong>30 minutes</strong>.</p>
-        <p>Copy and paste this link into your browser:</p>
-        <p style="word-break:break-all;background:#f3f4f6;padding:12px;border-radius:6px;font-size:13px">${resetUrl}</p>
+        <p>We received a request to reset your password. Click the button below — the link is valid for <strong>30 minutes</strong>.</p>
+        <a href="${resetUrl}" style="display:inline-block;margin:16px 0;padding:12px 24px;background:#1d4ed8;color:#fff;border-radius:6px;text-decoration:none;font-weight:600">Reset Password</a>
         <p style="color:#6b7280;font-size:13px">If you did not request this, you can safely ignore this email. Your password will not change.</p>
       </div>
     `.trim();
