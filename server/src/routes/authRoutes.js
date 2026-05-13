@@ -33,7 +33,6 @@ router.post(
 );
 router.post(
   "/reset-password",
-  passwordResetLimiter,
   [
     body("token").trim().notEmpty(),
     body("email").trim().isEmail().normalizeEmail(),
